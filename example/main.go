@@ -3,18 +3,19 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"felixorb/fexrpc/client"
-	"felixorb/fexrpc/codec"
-	"felixorb/fexrpc/common"
-	"felixorb/fexrpc/registry"
-	"felixorb/fexrpc/server"
-	"felixorb/fexrpc/xclient"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/felixorb/fexrpc/client"
+	"github.com/felixorb/fexrpc/codec"
+	"github.com/felixorb/fexrpc/common"
+	"github.com/felixorb/fexrpc/registry"
+	"github.com/felixorb/fexrpc/server"
+	"github.com/felixorb/fexrpc/xclient"
 )
 
 // 启动注册中心

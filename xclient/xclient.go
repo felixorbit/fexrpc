@@ -2,10 +2,11 @@ package xclient
 
 import (
 	"context"
-	fexClient "felixorb/fexrpc/client"
-	"felixorb/fexrpc/common"
 	"reflect"
 	"sync"
+
+	fexClient "github.com/felixorb/fexrpc/client"
+	"github.com/felixorb/fexrpc/common"
 )
 
 type XClient struct {

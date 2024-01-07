@@ -1,8 +1,9 @@
 package common
 
 import (
-	"felixorb/fexrpc/codec"
 	"time"
+
+	"github.com/felixorb/fexrpc/codec"
 )
 
 type Option struct {

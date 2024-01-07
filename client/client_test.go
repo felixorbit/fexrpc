@@ -2,13 +2,14 @@ package client
 
 import (
 	"context"
-	"felixorb/fexrpc/common"
-	"felixorb/fexrpc/server"
 	"fmt"
 	"net"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/felixorb/fexrpc/common"
+	"github.com/felixorb/fexrpc/server"
 )
 
 func _assert(condition bool, msg string, v ...interface{}) {

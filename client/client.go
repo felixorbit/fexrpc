@@ -5,8 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"felixorb/fexrpc/codec"
-	"felixorb/fexrpc/common"
 	"fmt"
 	"io"
 	"log"
@@ -15,6 +13,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/felixorb/fexrpc/codec"
+	"github.com/felixorb/fexrpc/common"
 )
 
 // Client 维护一次连接

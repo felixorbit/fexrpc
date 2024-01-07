@@ -3,8 +3,6 @@ package server
 import (
 	"encoding/json"
 	"errors"
-	"felixorb/fexrpc/codec"
-	"felixorb/fexrpc/common"
 	"fmt"
 	"io"
 	"log"
@@ -14,6 +12,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/felixorb/fexrpc/codec"
+	"github.com/felixorb/fexrpc/common"
 )
 
 type Server struct {
