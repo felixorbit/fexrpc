@@ -3,7 +3,7 @@ package common
 import (
 	"time"
 
-	"github.com/felixorb/fexrpc/codec"
+	"github.com/felixorbit/fexrpc/codec"
 )
 
 type Option struct {

@@ -1,3 +1,3 @@
-module github.com/felixorb/fexrpc
+module github.com/felixorbit/fexrpc
 
 go 1.20

@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/felixorb/fexrpc/codec"
-	"github.com/felixorb/fexrpc/common"
+	"github.com/felixorbit/fexrpc/codec"
+	"github.com/felixorbit/fexrpc/common"
 )
 
 type Server struct {

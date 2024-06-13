@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/felixorb/fexrpc/common"
-	"github.com/felixorb/fexrpc/server"
+	"github.com/felixorbit/fexrpc/common"
+	"github.com/felixorbit/fexrpc/server"
 )
 
 func _assert(condition bool, msg string, v ...interface{}) {

@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"sync"
 
-	fexClient "github.com/felixorb/fexrpc/client"
-	"github.com/felixorb/fexrpc/common"
+	fexClient "github.com/felixorbit/fexrpc/client"
+	"github.com/felixorbit/fexrpc/common"
 )
 
 type XClient struct {
