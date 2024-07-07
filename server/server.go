@@ -1,9 +1,11 @@
 package server
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/felixorbit/fexrpc/option"
 	"io"
 	"log"
 	"net"
@@ -17,17 +19,11 @@ import (
 	"github.com/felixorbit/fexrpc/common"
 )
 
+// Server 用来提供 RPC 服务的服务器
 type Server struct {
-	serviceMap sync.Map
+	serviceMap sync.Map // 存储所有注册的服务
+	addr       string
 }
-
-func NewServer() *Server {
-	return &Server{}
-}
-
-var DefaultServer = NewServer()
-
-var invalidRequest = struct{}{}
 
 // 表示一次 RPC 调用请求
 type request struct {
@@ -35,6 +31,16 @@ type request struct {
 	svc          *service
 	mtype        *methodType
 	argv, replyv reflect.Value
+}
+
+var invalidRequest = struct{}{}
+
+func NewServer() *Server {
+	return &Server{}
+}
+
+func (s *Server) SetAddr(addr string) {
+	s.addr = addr
 }
 
 func (s *Server) findService(serviceMethod string) (svc *service, mtype *methodType, err error) {
@@ -61,7 +67,7 @@ func (s *Server) readRequestHeader(cc codec.Codec) (*codec.Header, error) {
 	var h codec.Header
 	if err := cc.ReadHeader(&h); err != nil {
 		if err != io.EOF && err != io.ErrUnexpectedEOF {
-			log.Println("rpc server: read header error: ", err)
+			log.Printf("[%s] rpc server: read header error: %+v", s.addr, err)
 		}
 		return nil, err
 	}
@@ -132,7 +138,7 @@ func (s *Server) sendResponse(cc codec.Codec, header *codec.Header, body interfa
 	}
 }
 
-func (s *Server) serveCodec(cc codec.Codec, opt *common.Option) {
+func (s *Server) serveCodec(cc codec.Codec, opt *option.Option) {
 	sending := &sync.Mutex{}
 	wg := &sync.WaitGroup{}
 	for {
@@ -146,37 +152,45 @@ func (s *Server) serveCodec(cc codec.Codec, opt *common.Option) {
 			continue
 		}
 		wg.Add(1)
-		s.handleRequest(cc, req, sending, wg, opt.HandleTimeout)
+		go s.handleRequest(cc, req, sending, wg, opt.HandleTimeout)
 	}
 	wg.Wait()
 	_ = cc.Close()
 }
 
-// 一次连接可以包含多次调用，报文格式：| Option | Header1 | Body1 | Header2 | Body2 | ...
+// ServeConn 一次连接可以包含多次调用，报文格式：| Option | Header1 | Body1 | Header2 | Body2 | ...
 func (s *Server) ServeConn(conn io.ReadWriteCloser) {
 	defer func() {
 		_ = conn.Close()
 	}()
 	// 反序列化 Option，检查
-	var opt common.Option
-	if err := json.NewDecoder(conn).Decode(&opt); err != nil {
-		log.Println("rpc server: options error: ", err)
-		return
+	var opt option.Option
+	switch option.OptCodecType {
+	case common.OptionCodecBinary:
+		if err := binary.Read(conn, binary.BigEndian, &opt); err != nil {
+			log.Println("rpc server: options error: ", err)
+			return
+		}
+	case common.OptionCodecJson:
+		if err := json.NewDecoder(conn).Decode(&opt); err != nil {
+			log.Println("rpc server: options error: ", err)
+			return
+		}
 	}
-	if opt.MagicNumber != common.MagicNumber {
+	if opt.MagicNumber != option.MagicNumber {
 		log.Printf("rpc server: invalid magic number: %v", opt.MagicNumber)
 		return
 	}
 	// 根据 CodeType 选择解码器进行解码
-	f, ok := codec.NewCodecFuncMap[opt.CodecType]
+	codecFunc, ok := codec.NewCodecFuncMap[opt.CodecType]
 	if !ok {
 		log.Printf("rpc server: invalid codec type: %v", opt.CodecType)
 		return
 	}
-	s.serveCodec(f(conn), &opt)
+	s.serveCodec(codecFunc(conn), &opt)
 }
 
-// 直接使用 TCP 协议
+// Accept 直接使用 TCP 协议
 func (s *Server) Accept(lis net.Listener) {
 	for {
 		conn, err := lis.Accept()
@@ -186,10 +200,6 @@ func (s *Server) Accept(lis net.Listener) {
 		}
 		go s.ServeConn(conn)
 	}
-}
-
-func Accept(lis net.Listener) {
-	DefaultServer.Accept(lis)
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -208,24 +218,32 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	s.ServeConn(conn)
 }
 
-// 使用 HTTP 协议
-func (s *Server) HandleHTTP() {
-	http.Handle(common.DefaultRPCPath, s)
-	http.Handle(common.DefaultDebugPath, debugHTTP{s})
+// HandleHTTP 使用 HTTP 协议
+func (s *Server) HandleHTTP() *http.ServeMux {
+	httpServer := http.NewServeMux()
+	httpServer.Handle(common.DefaultRPCPath, s)
+	httpServer.Handle(common.DefaultDebugPath, debugHTTP{s})
 	log.Println("rpc server debug path:", common.DefaultDebugPath)
+	return httpServer
+}
+
+// Register 将服务注册为 Service 实例，对外支持 RPC 调用
+func (s *Server) Register(obj interface{}) error {
+	serviceObj := newService(obj)
+	if _, dup := s.serviceMap.LoadOrStore(serviceObj.name, serviceObj); dup {
+		return errors.New("rpc: service already registered: " + serviceObj.name)
+	}
+	return nil
+}
+
+var DefaultServer = NewServer()
+
+func Accept(lis net.Listener) {
+	DefaultServer.Accept(lis)
 }
 
 func HandleHTTP() {
 	DefaultServer.HandleHTTP()
-}
-
-// 服务注册为 Service 实例，对外支持 RPC 调用
-func (s *Server) Register(obj interface{}) error {
-	service := newService(obj)
-	if _, dup := s.serviceMap.LoadOrStore(service.name, service); dup {
-		return errors.New("rpc: service already registered: " + service.name)
-	}
-	return nil
 }
 
 func Register(obj interface{}) error {

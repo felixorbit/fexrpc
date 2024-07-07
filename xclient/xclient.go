@@ -2,22 +2,23 @@ package xclient
 
 import (
 	"context"
+	"github.com/felixorbit/fexrpc/option"
 	"reflect"
 	"sync"
 
 	fexClient "github.com/felixorbit/fexrpc/client"
-	"github.com/felixorbit/fexrpc/common"
 )
 
+// XClient 封装 Client，屏蔽建立连接的实现，同时支持服务发现和负载均衡
 type XClient struct {
 	d       Discovery
 	mode    SelectMode
-	opt     *common.Option
+	opt     *option.Option
 	mu      sync.Mutex
 	clients map[string]*fexClient.Client // 保存已建立的连接
 }
 
-func NewXClient(d Discovery, mode SelectMode, opt *common.Option) *XClient {
+func NewXClient(d Discovery, mode SelectMode, opt *option.Option) *XClient {
 	return &XClient{
 		d:       d,
 		mode:    mode,
@@ -47,7 +48,7 @@ func (xc *XClient) dial(addr string) (*fexClient.Client, error) {
 	}
 	if client == nil {
 		var err error
-		client, err = fexClient.XDial(addr)
+		client, err = fexClient.XDial(addr, xc.opt)
 		if err != nil {
 			return nil, err
 		}
@@ -94,13 +95,14 @@ func (xc *XClient) Broadcast(ctx context.Context, serviceMethod string, args, re
 			if reply != nil {
 				cloneReply = reflect.New(reflect.ValueOf(reply).Elem().Type()).Interface()
 			}
-			err := xc.call(addr, ctx, serviceMethod, args, cloneReply)
+			reqErr := xc.call(addr, ctx, serviceMethod, args, cloneReply)
+
 			mu.Lock()
-			if err != nil && e == nil {
-				e = err
+			if reqErr != nil && e == nil {
+				e = reqErr
 				cancel()
 			}
-			if err == nil && !replyDone {
+			if reqErr == nil && !replyDone {
 				reflect.ValueOf(reply).Elem().Set(reflect.ValueOf(cloneReply).Elem())
 				replyDone = true
 			}

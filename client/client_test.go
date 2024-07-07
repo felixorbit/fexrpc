@@ -3,12 +3,12 @@ package client
 import (
 	"context"
 	"fmt"
+	"github.com/felixorbit/fexrpc/option"
 	"net"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/felixorbit/fexrpc/common"
 	"github.com/felixorbit/fexrpc/server"
 )
 
@@ -21,17 +21,17 @@ func _assert(condition bool, msg string, v ...interface{}) {
 func TestClient_dialTimeout(t *testing.T) {
 	t.Parallel()
 	l, _ := net.Listen("tcp", ":0")
-	f := func(conn net.Conn, opt *common.Option) (client *Client, err error) {
+	f := func(conn net.Conn, opt *option.Option) (client *Client, err error) {
 		_ = conn.Close()
 		time.Sleep(time.Second * 2)
 		return nil, nil
 	}
 	t.Run("timeout", func(t *testing.T) {
-		_, err := dialTimeout(f, "tcp", l.Addr().String(), &common.Option{ConnectTimeout: time.Second})
+		_, err := dialTimeout(f, "tcp", l.Addr().String(), &option.Option{ConnectTimeout: time.Second})
 		_assert(err != nil && strings.Contains(err.Error(), "connect timeout"), "expect a timeout error")
 	})
 	t.Run("0", func(t *testing.T) {
-		_, err := dialTimeout(f, "tcp", l.Addr().String(), &common.Option{ConnectTimeout: 0})
+		_, err := dialTimeout(f, "tcp", l.Addr().String(), &option.Option{ConnectTimeout: 0})
 		_assert(err == nil, "0 means no limit")
 	})
 }
@@ -66,7 +66,7 @@ func TestClient_Call(t *testing.T) {
 		_assert(err != nil && strings.Contains(err.Error(), ctx.Err().Error()), "expect a timeout error")
 	})
 	t.Run("server handle timeout", func(t *testing.T) {
-		client, _ := Dial("tcp", addr, &common.Option{
+		client, _ := Dial("tcp", addr, &option.Option{
 			HandleTimeout: time.Second,
 		})
 		var reply int

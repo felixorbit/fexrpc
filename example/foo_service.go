@@ -1,11 +1,14 @@
 package main
 
-import "time"
+import (
+	"time"
+)
 
 type FooSvc int
 
 type FooArgs struct {
-	Num1, Num2 int
+	Num1 int
+	Num2 int
 }
 
 func (f FooSvc) Sum(args FooArgs, reply *int) error {

@@ -1,6 +1,6 @@
 package client
 
-// 一次调用 Call 包含：方法名、参数、响应
+// Call 一次调用 Call 包含：方法名、参数、响应
 // 支持异步调用，通过 Done 通道通知调用方
 type Call struct {
 	Seq           uint64

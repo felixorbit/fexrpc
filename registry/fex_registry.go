@@ -88,7 +88,7 @@ func HandleHTTP() {
 	DefaultRegistry.HandleHTTP(defaultPath)
 }
 
-func sendHearbeat(registry, addr string) error {
+func sendHeartbeat(registry, addr string) error {
 	log.Println(addr, " send heart beat to registry ", registry)
 	httpClient := &http.Client{}
 	req, _ := http.NewRequest("POST", registry, nil)
@@ -100,18 +100,18 @@ func sendHearbeat(registry, addr string) error {
 	return nil
 }
 
-// Hearbeat 用于服务定时向注册中心发送心跳
+// Heartbeat 用于服务定时向注册中心发送心跳. addr: protocol@addr
 func Heartbeat(registry, addr string, duration time.Duration) {
 	if duration == 0 {
 		duration = defaultTimeout - time.Minute
 	}
 	var err error
-	err = sendHearbeat(registry, addr)
+	err = sendHeartbeat(registry, addr)
 	go func() {
 		t := time.NewTicker(duration)
 		for err == nil {
 			<-t.C
-			err = sendHearbeat(registry, addr)
+			err = sendHeartbeat(registry, addr)
 		}
 	}()
 }

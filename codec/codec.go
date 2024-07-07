@@ -1,6 +1,8 @@
 package codec
 
-import "io"
+import (
+	"io"
+)
 
 type Header struct {
 	ServiceMethod string
@@ -8,7 +10,7 @@ type Header struct {
 	Error         string
 }
 
-// 编解码器接口
+// Codec 编解码器接口
 type Codec interface {
 	io.Closer
 	ReadHeader(*Header) error
@@ -16,20 +18,21 @@ type Codec interface {
 	Write(*Header, interface{}) error
 }
 
-// 编解码器的构造函数
+// NewCodecFunc 编解码器的构造函数
 // 将 IO 包起来，读/写都通过编解码器 codec 完成
 type NewCodecFunc func(io.ReadWriteCloser) Codec
 
-type CodecType string
+type CType uint64
 
 const (
-	// gob 和 json 都是 go 语言自带的序列化方式
-	GobType CodecType = "application/gob"
+	GobType CType = iota + 1
+	JsonType
 )
 
-var NewCodecFuncMap map[CodecType]NewCodecFunc
+var NewCodecFuncMap map[CType]NewCodecFunc
 
 func init() {
-	NewCodecFuncMap = make(map[CodecType]NewCodecFunc)
+	NewCodecFuncMap = make(map[CType]NewCodecFunc)
 	NewCodecFuncMap[GobType] = NewGobCodec
+	NewCodecFuncMap[JsonType] = NewJsonCodec
 }

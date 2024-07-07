@@ -70,7 +70,7 @@ func (s *service) registerMethods() {
 			continue
 		}
 		argType, replyType := mType.In(1), mType.In(2)
-		if !isExportedOrBuildinType(argType) || !isExportedOrBuildinType(replyType) {
+		if !isExportedOrBuildInType(argType) || !isExportedOrBuildInType(replyType) {
 			continue
 		}
 		s.method[method.Name] = &methodType{
@@ -82,7 +82,7 @@ func (s *service) registerMethods() {
 	}
 }
 
-func isExportedOrBuildinType(t reflect.Type) bool {
+func isExportedOrBuildInType(t reflect.Type) bool {
 	return ast.IsExported(t.Name()) || t.PkgPath() == ""
 }
 
